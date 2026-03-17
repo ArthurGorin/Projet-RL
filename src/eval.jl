@@ -17,7 +17,7 @@ export evaluate_agent
 # Evalue un acteur en mode glouton sur plusieurs episodes.
 function evaluate_agent(;
     episodes::Integer=3,
-    max_steps_per_episode::Integer=500,
+    max_steps_per_episode::Integer=300,
     checkpoint_path::Union{Nothing,AbstractString}=joinpath(@__DIR__, "..", "models", "srl_breakout_demo.bson"),
     actor=nothing,
 )

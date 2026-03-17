@@ -92,10 +92,11 @@ end
 #Boucle d'entrainement globale
 function train!(;
     episodes::Integer=100,
-    max_steps_per_episode::Integer=500,
+    max_steps_per_episode::Integer=300,
     replay_capacity::Integer=20_000,
     batch_size::Integer=32,
     warmup_steps::Integer=1_000,
+    update_interval::Integer=4,
     gamma::Real=0.99f0,
     actor_lr::Real=1.0f-4,
     critic_lr::Real=1.0f-4,
@@ -122,9 +123,12 @@ function train!(;
     total_env_steps = 0
     total_updates = 0
 
+    update_interval >= 1 || throw(ArgumentError("update_interval must be >= 1, got $update_interval"))
+
     log_message(
         "debut entrainement SRL demo episodes=$episodes batch_size=$batch_size " *
-        "warmup_steps=$warmup_steps n_actions=$n_actions gpu=$(gpu_available())"
+        "warmup_steps=$warmup_steps update_interval=$update_interval " *
+        "n_actions=$n_actions gpu=$(gpu_available())"
     )
 
     for episode in 1:episodes
@@ -148,7 +152,9 @@ function train!(;
             episode_return += reward
             state = next_state
 
-            if total_env_steps >= warmup_steps && can_sample(replay_buffer, batch_size)
+            if total_env_steps >= warmup_steps &&
+               total_env_steps % update_interval == 0 &&
+               can_sample(replay_buffer, batch_size)
                 for _ in 1:updates_per_step
                     batch = sample_batch(replay_buffer, batch_size; rng=rng)
 
