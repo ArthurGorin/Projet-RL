@@ -7,7 +7,7 @@ module Actor
 using Flux
 using Random
 
-using ..Utils: to_device
+using ..Utils: to_device, to_cpu
 
 export build_actor, to_batch, to_batch_states, action_scores, action_probs, sample_action, select_action
 
@@ -91,7 +91,7 @@ end
    
 #Exploration : Tire une action a partir de la distribution produite par la co layer
 function sample_action(actor, stack::AbstractArray{<:Real,3}; rng=Random.default_rng(), temperature::Real=1.0f0)
-    probs = action_probs(actor, stack; temperature=temperature)
+    probs = Vector{Float32}(to_cpu(action_probs(actor, stack; temperature=temperature)))
     threshold = rand(rng)
     cumulative = 0.0f0
 
@@ -106,7 +106,7 @@ end
 #----Eval/inférence------#
 #choisit directement l'argmax selon les scores, plus besoin de régularisation car pas de backpropagation
 function select_action(actor, stack::AbstractArray{<:Real,3})
-    return argmax(action_scores(actor, stack))
+    return argmax(Vector{Float32}(to_cpu(action_scores(actor, stack))))
 end
 
 end

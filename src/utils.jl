@@ -2,6 +2,7 @@ module Utils
 
 using CUDA
 using Flux
+using cuDNN
 
 export log_message, gpu_available, to_device, to_cpu
 

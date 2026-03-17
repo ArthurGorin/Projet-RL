@@ -7,7 +7,7 @@ module Critic
 #------------------IL EST FINI/COMMENTÉ------------#
 using Flux
 
-using ..Utils: to_device
+using ..Utils: to_device, to_cpu
 
 export build_critic, to_batch, to_batch_states, q_values, evaluate_action, greedy_value
 
@@ -75,14 +75,14 @@ end
 
 # Extrait la Q-value d'une action pour un etat unique.
 function evaluate_action(critic, stack::AbstractArray{<:Real,3}, action::Integer)
-    values = q_values(critic, stack)
+    values = Vector{Float32}(to_cpu(q_values(critic, stack)))
     1 <= action <= length(values) || throw(BoundsError(values, action))
     return values[action]
 end
 
 #Renvoie la meilleure valeur estimee par le critique pour un etat unique.
 function greedy_value(critic, stack::AbstractArray{<:Real,3})
-    return maximum(q_values(critic, stack))
+    return maximum(Vector{Float32}(to_cpu(q_values(critic, stack))))
 end
 
 end
