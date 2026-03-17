@@ -8,7 +8,6 @@ module Env
 
 using ReinforcementLearning
 using ArcadeLearningEnvironment
-using ImageTransformations
 
 export make_env, preprocess_frame, init_state_stack, update_state_stack, reset_env!, step_env!
 
@@ -20,11 +19,32 @@ function make_env(game::AbstractString="breakout")
     return AtariEnv(game)
 end
 
-# Convertit une frame brute en Float32 normalise et redimensionne en 84x84.
+# Recadre au centre et complete avec des zeros si la frame est trop petite.
+function center_crop_or_pad(x::AbstractMatrix{Float32}, out_h::Int, out_w::Int)
+    h, w = size(x)
+    y0 = max(1, fld(h - out_h, 2) + 1)
+    x0 = max(1, fld(w - out_w, 2) + 1)
+    y1 = min(h, y0 + out_h - 1)
+    x1 = min(w, x0 + out_w - 1)
+
+    cropped = @view x[y0:y1, x0:x1]
+    out = zeros(Float32, out_h, out_w)
+    copy_h, copy_w = size(cropped)
+    dst_y0 = fld(out_h - copy_h, 2) + 1
+    dst_x0 = fld(out_w - copy_w, 2) + 1
+    out[dst_y0:dst_y0 + copy_h - 1, dst_x0:dst_x0 + copy_w - 1] .= cropped
+    return out
+end
+
+# Convertit une frame brute en Float32 normalise, puis sous-echantillonne
+# par strides entiers avant un recadrage centre en 84x84.
 function preprocess_frame(frame::AbstractMatrix{UInt8})
-    x = Float32.(frame) ./ 255f0
-    x = imresize(x, (FRAME_HEIGHT, FRAME_WIDTH))
-    return Float32.(x)
+    h, w = size(frame)
+    stride_h = max(1, fld(h, FRAME_HEIGHT))
+    stride_w = max(1, fld(w, FRAME_WIDTH))
+    sampled = @view frame[1:stride_h:end, 1:stride_w:end]
+    x = Float32.(sampled) ./ 255f0
+    return center_crop_or_pad(x, FRAME_HEIGHT, FRAME_WIDTH)
 end
 
 # Initialise l'etat empile en dupliquant la premiere frame 4 fois.
